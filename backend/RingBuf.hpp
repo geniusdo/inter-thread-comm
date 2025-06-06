@@ -29,10 +29,33 @@ concept SharedPtr = requires(T t) {
 template <typename T>
 class RingBuffer {
 public:
+  using BufferElement = T;
+
   explicit RingBuffer(size_t capacity = 128)
       : capacity_(capacity + 1), buffer_(std::make_unique<T[]>(capacity + 1)), head_(0), tail_(0) {}
 
-  void push(T item) {
+  RingBuffer(RingBuffer&& other) noexcept
+      : capacity_(other.capacity_),
+        buffer_(std::move(other.buffer_)),
+        head_(other.head_.load()),
+        tail_(other.tail_.load()) {}
+
+  RingBuffer& operator=(RingBuffer&& other) noexcept {
+    if (this != &other) {
+      capacity_ = other.capacity_;
+      buffer_   = std::move(other.buffer_);
+      head_.store(other.head_.load());
+      tail_.store(other.tail_.load());
+    }
+    return *this;
+  }
+
+  RingBuffer(const RingBuffer&)            = delete;
+  RingBuffer& operator=(const RingBuffer&) = delete;
+
+  template <typename U>
+  requires std::convertible_to<U&&, T>
+  void push(U&& item) {
     size_t current_head = head_.load(std::memory_order_relaxed);
     size_t current_tail = tail_.load(std::memory_order_acquire);
     size_t next_head    = (current_head + 1) % capacity_;
@@ -43,7 +66,7 @@ public:
       current_tail = (current_tail + 1) % capacity_;
       tail_.store(current_tail, std::memory_order_release);
     }
-    buffer_[current_head] = item;
+    buffer_[current_head] = std::forward<U>(item);
     head_.store(next_head, std::memory_order_release);
     head_.notify_one();
     return;
@@ -52,7 +75,7 @@ public:
   T pop() {
     size_t current_tail = tail_.load(std::memory_order_acquire);
     head_.wait(current_tail, std::memory_order_acquire);
-    T item = buffer_[current_tail];
+    T item = std::move(buffer_[current_tail]);
     if constexpr (SharedPtr<T>) {
       buffer_[current_tail].reset();
     }
@@ -60,12 +83,12 @@ public:
     return item;
   }
 
-  bool try_pop(T &item) {
+  bool try_pop(T& item) {
     size_t current_tail = tail_.load(std::memory_order_acquire);
     if (current_tail == head_.load(std::memory_order_acquire)) {
       return false;
     }
-    item = buffer_[current_tail];
+    item = std::move(buffer_[current_tail]);
     if constexpr (SharedPtr<T>) {
       buffer_[current_tail].reset();
     }
