@@ -1,0 +1,17 @@
+
+  BasedOnStyle: Google
+  AccessModifierOffset: '-2'
+  AlignTrailingComments: 'true'
+  AlignConsecutiveAssignments: 'true'
+  AllowAllParametersOfDeclarationOnNextLine: 'false'
+  AlwaysBreakTemplateDeclarations: 'Yes'
+  BreakBeforeBraces: Attach
+  ColumnLimit: '100'
+  ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+  IndentPPDirectives: AfterHash
+  IndentWidth: '2'
+  NamespaceIndentation: All
+  BreakBeforeBinaryOperators: All
+  BreakBeforeTernaryOperators: 'true'
+  AllowShortLambdasOnASingleLine: Inline
+
