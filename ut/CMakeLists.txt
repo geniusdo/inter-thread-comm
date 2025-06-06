@@ -1,4 +1,6 @@
 
+include_directories(${CMAKE_SOURCE_DIR})
+
 file(GLOB TEST_SOURCES "*.cpp")
 
 
