@@ -15,86 +15,76 @@
 #pragma once
 
 #include <atomic>
-#include <memory>
 #include <concepts>
+#include <memory>
 
 template <typename T>
 concept SharedPtr = requires(T t) {
-    typename T::element_type; //
-    requires std::same_as<T, std::shared_ptr<typename T::element_type>>;
+  typename T::element_type;  //
+  requires std::same_as<T, std::shared_ptr<typename T::element_type>>;
 };
 
 // single producer-single consumer ring buffer
 // currently only support POD data structre and shared_ptr
 template <typename T>
-class RingBuffer
-{
+class RingBuffer {
 public:
-    explicit RingBuffer(size_t capacity = 128)
-        : capacity_(capacity + 1), buffer_(std::make_unique<T[]>(capacity + 1)),
-          head_(0), tail_(0) {}
-    void push(T item)
-    {
-        size_t current_head = head_.load(std::memory_order_relaxed);
-        size_t current_tail = tail_.load(std::memory_order_acquire);
-        size_t next_head = (current_head + 1) % capacity_;
-        if (next_head == current_tail)
-        {
-            if constexpr (SharedPtr<T>)
-            {
-                buffer_[current_tail].reset();
-            }
-            current_tail = (current_tail + 1) % capacity_;
-            tail_.store(current_tail, std::memory_order_release);
-        }
-        buffer_[current_head] = item;
-        head_.store(next_head, std::memory_order_release);
-        head_.notify_one();
-        return;
-    }
+  explicit RingBuffer(size_t capacity = 128)
+      : capacity_(capacity + 1), buffer_(std::make_unique<T[]>(capacity + 1)), head_(0), tail_(0) {}
 
-    T pop()
-    {
-        size_t current_tail = tail_.load(std::memory_order_acquire);
-        head_.wait(current_tail, std::memory_order_acquire);
-        T item = buffer_[current_tail];
-        if constexpr (SharedPtr<T>)
-        {
-            buffer_[current_tail].reset();
-        }
-        tail_.store((current_tail + 1) % capacity_, std::memory_order_release);
-        return item;
+  void push(T item) {
+    size_t current_head = head_.load(std::memory_order_relaxed);
+    size_t current_tail = tail_.load(std::memory_order_acquire);
+    size_t next_head    = (current_head + 1) % capacity_;
+    if (next_head == current_tail) {
+      if constexpr (SharedPtr<T>) {
+        buffer_[current_tail].reset();
+      }
+      current_tail = (current_tail + 1) % capacity_;
+      tail_.store(current_tail, std::memory_order_release);
     }
+    buffer_[current_head] = item;
+    head_.store(next_head, std::memory_order_release);
+    head_.notify_one();
+    return;
+  }
 
-    bool try_pop(T &item)
-    {
-        size_t current_tail = tail_.load(std::memory_order_acquire);
-        if (current_tail == head_.load(std::memory_order_acquire))
-        {
-            return false;
-        }
-        item = buffer_[current_tail];
-        if constexpr (SharedPtr<T>)
-        {
-            buffer_[current_tail].reset();
-        }
-        tail_.store((current_tail + 1) % capacity_, std::memory_order_release);
-        return true;
+  T pop() {
+    size_t current_tail = tail_.load(std::memory_order_acquire);
+    head_.wait(current_tail, std::memory_order_acquire);
+    T item = buffer_[current_tail];
+    if constexpr (SharedPtr<T>) {
+      buffer_[current_tail].reset();
     }
+    tail_.store((current_tail + 1) % capacity_, std::memory_order_release);
+    return item;
+  }
 
-    size_t size() const
-    {
-        return (head_.load(std::memory_order_relaxed) - tail_.load(std::memory_order_relaxed)) % capacity_;
+  bool try_pop(T &item) {
+    size_t current_tail = tail_.load(std::memory_order_acquire);
+    if (current_tail == head_.load(std::memory_order_acquire)) {
+      return false;
     }
+    item = buffer_[current_tail];
+    if constexpr (SharedPtr<T>) {
+      buffer_[current_tail].reset();
+    }
+    tail_.store((current_tail + 1) % capacity_, std::memory_order_release);
+    return true;
+  }
 
-    bool empty() const
-    {
-        return head_.load(std::memory_order_relaxed) == tail_.load(std::memory_order_relaxed);
-    }
+  size_t size() const {
+    return (head_.load(std::memory_order_relaxed) - tail_.load(std::memory_order_relaxed))
+           % capacity_;
+  }
+
+  bool empty() const {
+    return head_.load(std::memory_order_relaxed) == tail_.load(std::memory_order_relaxed);
+  }
 
 private:
-    const size_t capacity_;
-    std::unique_ptr<T[]> buffer_; // The actual ring buffer
-    std::atomic<size_t> head_;    // Points to the next available spot for push
-    std::atomic<size_t> tail_;    // Points to the next spot to pop
+  const size_t capacity_;
+  std::unique_ptr<T[]> buffer_;  // The actual ring buffer
+  std::atomic<size_t> head_;     // Points to the next available spot for push
+  std::atomic<size_t> tail_;     // Points to the next spot to pop
 };
