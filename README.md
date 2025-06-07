@@ -24,7 +24,7 @@ MsgQueue mq1(Ringbuffer<int>{128}); // here RingBuffer is selected as the backen
 
 // 2. Initialize a MsgQueue through an existed backend
 Ringbuffer<int>{128} rb;
-MsgQueue mq2 = std::move(rb); // or MsgQueue mq2(std::move(rb));
+MsgQueue mq2(std::move(rb));
 ``` 
 
 #### Enqueue/Dequeue
