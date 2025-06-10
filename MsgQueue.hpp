@@ -22,6 +22,7 @@ concept ValidBackend = requires(T t) {
   { t.push(std::declval<typename std::decay_t<T>::BufferElement>()) } -> std::same_as<void>;
   { t.try_pop(std::declval<typename std::decay_t<T>::BufferElement&>()) } -> std::same_as<bool>;
   { t.empty() } -> std::same_as<bool>;
+  { t.size() } -> std::same_as<size_t>;
 };
 
 // External Polymorphism
@@ -55,6 +56,8 @@ public:
 
   bool empty() const { return pimpl->empty(); }
 
+  size_t size() const { return pimpl->size(); }
+
 private:
   struct concept_t {
     // virtual destructor
@@ -65,6 +68,8 @@ private:
     virtual bool try_pop(void* out) = 0;
     // check if the queue is empty
     virtual bool empty() const = 0;
+    // get the size of the queue
+    virtual size_t size() const = 0;
   };
 
   template <typename T>
@@ -85,6 +90,8 @@ private:
     }
 
     bool empty() const override { return instance.empty(); }
+
+    size_t size() const override { return instance.size(); }
 
   private:
     std::decay_t<T> instance;  // the actual queue
