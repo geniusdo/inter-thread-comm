@@ -54,7 +54,7 @@ public:
   RingBuffer& operator=(const RingBuffer&) = delete;
 
   template <typename U>
-  requires std::convertible_to<U&&, T>
+  requires std::is_convertible_v<U&&, T>
   void push(U&& item) {
     size_t current_head = head_.load(std::memory_order_relaxed);
     size_t current_tail = tail_.load(std::memory_order_acquire);
