@@ -60,8 +60,8 @@ public:
     size_t current_tail = tail_.load(std::memory_order_acquire);
     size_t next_head    = (current_head + 1) % capacity_;
     if (next_head == current_tail) {
-      if constexpr (SharedPtr<T>) { //TODO: reduce redundancy
-        buffer_[current_tail].reset(); 
+      if constexpr (SharedPtr<T>) {  // TODO: reduce redundancy
+        buffer_[current_tail].reset();
       }
       current_tail = (current_tail + 1) % capacity_;
       tail_.store(current_tail, std::memory_order_release);
@@ -89,7 +89,7 @@ public:
       return false;
     }
     item = std::move(buffer_[current_tail]);
-    if constexpr (SharedPtr<T>) { //TODO: reduce redundancy
+    if constexpr (SharedPtr<T>) {  // TODO: reduce redundancy
       buffer_[current_tail].reset();
     }
     tail_.store((current_tail + 1) % capacity_, std::memory_order_release);
@@ -97,7 +97,8 @@ public:
   }
 
   size_t size() const {
-    return (head_.load(std::memory_order_relaxed) - tail_.load(std::memory_order_relaxed))
+    return (head_.load(std::memory_order_relaxed) - tail_.load(std::memory_order_relaxed)
+            + capacity_)
            % capacity_;
   }
 
