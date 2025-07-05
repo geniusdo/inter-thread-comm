@@ -33,9 +33,11 @@ class RingBuffer {
 public:
   using BufferElement = T;
 
+  // Old -> New
   using iterator       = RingIterator<RingBuffer<T>, false, false>;
   using const_iterator = RingIterator<RingBuffer<T>, true, false>;
 
+  // New -> Old
   using reverse_iterator       = RingIterator<RingBuffer<T>, false, true>;
   using const_reverse_iterator = RingIterator<RingBuffer<T>, true, true>;
 
