@@ -28,10 +28,10 @@ TEST_CASE("RingBuffer<std::shared_ptr<int>> push/pop and refcount") {
   CHECK(sp2.use_count() == 1);
 
   rb.push(sp1);  // copy push
-  CHECK(sp1.use_count() == 2);  
+  CHECK(sp1.use_count() == 2);
 
-  rb.push(std::move(sp2));  
-  CHECK(sp2 == nullptr);    
+  rb.push(std::move(sp2));
+  CHECK(sp2 == nullptr);
 
   CHECK(rb.size() == 2);
 
@@ -40,7 +40,7 @@ TEST_CASE("RingBuffer<std::shared_ptr<int>> push/pop and refcount") {
   CHECK(rb.try_pop(out_sp));
   CHECK(out_sp != nullptr);
   CHECK(*out_sp == 100);
-  CHECK(out_sp.use_count() == 2);  
+  CHECK(out_sp.use_count() == 2);
 
   CHECK(rb.try_pop(out_sp));
   CHECK(out_sp != nullptr);
@@ -73,4 +73,64 @@ TEST_CASE("RingBuffer<std::shared_ptr<int>> overwrite oldest element") {
   CHECK(*out_sp == 3);
 
   CHECK(rb.empty());
+}
+
+TEST_CASE("Iterator") {
+  RingBuffer<int> rb1(5);
+  size_t cnt = 1;
+  rb1.push(1);
+  rb1.push(2);
+  rb1.push(3);
+  rb1.push(4);
+  rb1.push(5);
+  for (auto& x : rb1) {
+    CHECK(x == cnt++);
+  }
+  rb1.push(6);
+  rb1.push(7);
+  cnt = 3;
+  for (auto& x : rb1) {
+    CHECK(x == cnt++);
+  }
+  rb1.pop();
+  rb1.pop();
+  cnt = 5;
+  for (auto& x : rb1) {
+    CHECK(x == cnt++);
+  }
+  rb1.push(8);
+  rb1.push(9);
+  cnt = 5;
+  for (auto& x : rb1) {
+    CHECK(x == cnt++);
+  }
+
+  RingBuffer<int> rb2(5);
+  cnt = 3;
+  rb2.push(7);
+  rb2.push(6);
+  rb2.push(5);
+  rb2.push(4);
+  rb2.push(3);
+  for (auto it = rb2.rbegin(); it != rb2.rend(); ++it) {
+    CHECK(*it == cnt++);
+  }
+  cnt = 1;
+  rb2.push(2);
+  rb2.push(1);
+  for (auto it = rb2.rbegin(); it != rb2.rend(); ++it) {
+    CHECK(*it == cnt++);
+  }
+  rb2.pop();
+  rb2.pop();
+  cnt = 1;
+  for (auto it = rb2.rbegin(); it != rb2.rend(); ++it) {
+    CHECK(*it == cnt++);
+  }
+  rb1.push(0);
+  rb1.push(-1);
+  cnt = 1;
+  for (auto it = rb2.rbegin(); it != rb2.rend(); ++it) {
+    CHECK(*it == cnt++);
+  }
 }

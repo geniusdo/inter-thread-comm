@@ -18,6 +18,8 @@
 #include <concepts>
 #include <memory>
 
+#include "RingIterator.hpp"
+
 template <typename T>
 concept SharedPtr = requires(T t) {
   typename T::element_type;  //
@@ -30,6 +32,12 @@ template <typename T>
 class RingBuffer {
 public:
   using BufferElement = T;
+
+  using iterator       = RingIterator<RingBuffer<T>, false, false>;
+  using const_iterator = RingIterator<RingBuffer<T>, true, false>;
+
+  using reverse_iterator       = RingIterator<RingBuffer<T>, false, true>;
+  using const_reverse_iterator = RingIterator<RingBuffer<T>, true, true>;
 
   explicit RingBuffer(size_t capacity = 128)
       : capacity_(capacity + 1), buffer_(std::make_unique<T[]>(capacity + 1)), head_(0), tail_(0) {}
@@ -54,7 +62,7 @@ public:
   RingBuffer& operator=(const RingBuffer&) = delete;
 
   template <typename U>
-  requires std::is_convertible_v<U&&, T>
+    requires std::is_convertible_v<U&&, T>
   void push(U&& item) {
     size_t current_head = head_.load(std::memory_order_relaxed);
     size_t current_tail = tail_.load(std::memory_order_acquire);
@@ -106,7 +114,36 @@ public:
     return head_.load(std::memory_order_relaxed) == tail_.load(std::memory_order_relaxed);
   }
 
+  iterator begin() { return iterator(this, tail_.load(), 0); }
+
+  iterator end() { return iterator(this, head_.load(), this->size()); }
+
+  const_iterator cbegin() { return const_iterator(this, tail_.load(), 0); }
+
+  const_iterator cend() { return const_iterator(this, head_.load(), this->size()); }
+
+  reverse_iterator rbegin() {
+    return reverse_iterator(this, (head_.load() + capacity_ - 1) % capacity_, 0);
+  }
+
+  reverse_iterator rend() {
+    return reverse_iterator(this, (tail_.load() + 1) % capacity_, this->size());
+  }
+
+  const_reverse_iterator crbegin() {
+    return const_reverse_iterator(this, (head_.load() + capacity_ - 1) % capacity_, 0);
+  }
+
+  const_reverse_iterator crend() {
+    return const_reverse_iterator(this, (tail_.load() + 1) % capacity_, this->size());
+  }
+
 private:
+  template <typename, bool, bool>
+  friend class RingIterator;
+
+  T* data() { return buffer_.get(); }
+
   const size_t capacity_;
   std::unique_ptr<T[]> buffer_;  // The actual ring buffer
   std::atomic<size_t> head_;     // Points to the next available spot for push
