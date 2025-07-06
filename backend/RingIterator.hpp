@@ -18,7 +18,7 @@ template <class RingBufferType, bool IsConst = false, bool IsReverse = false>
 class RingIterator {
 public:
   using iterator_category = std::forward_iterator_tag;
-  using value_type        = RingBufferType::BufferElement;
+  using value_type        = typename RingBufferType::BufferElement;
   using difference_type   = std::ptrdiff_t;
   using reference         = std::conditional_t<IsConst, const value_type&, value_type&>;
   using pointer           = std::conditional_t<IsConst, const value_type*, value_type*>;
