@@ -133,4 +133,15 @@ TEST_CASE("Iterator") {
   for (auto it = rb2.rbegin(); it != rb2.rend(); ++it) {
     CHECK(*it == cnt++);
   }
+
+  RingBuffer<int> rb3(5);
+  cnt = 1;
+  rb3.push(1);
+  rb3.push(2);
+  rb3.push(3);
+  rb3.push(4);
+  rb3.push(5);
+  for (auto it = rb3.cbegin(); it != rb3.cend(); ++it) {
+    CHECK(*it == cnt++);
+  }
 }

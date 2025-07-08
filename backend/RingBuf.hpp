@@ -120,9 +120,9 @@ public:
 
   iterator end() { return iterator(this, head_.load(), this->size()); }
 
-  const_iterator cbegin() { return const_iterator(this, tail_.load(), 0); }
+  const_iterator cbegin() const { return const_iterator(this, tail_.load(), 0); }
 
-  const_iterator cend() { return const_iterator(this, head_.load(), this->size()); }
+  const_iterator cend() const { return const_iterator(this, head_.load(), this->size()); }
 
   reverse_iterator rbegin() {
     return reverse_iterator(this, (head_.load() + capacity_ - 1) % capacity_, 0);
@@ -132,11 +132,11 @@ public:
     return reverse_iterator(this, (tail_.load() + 1) % capacity_, this->size());
   }
 
-  const_reverse_iterator crbegin() {
+  const_reverse_iterator crbegin() const {
     return const_reverse_iterator(this, (head_.load() + capacity_ - 1) % capacity_, 0);
   }
 
-  const_reverse_iterator crend() {
+  const_reverse_iterator crend() const {
     return const_reverse_iterator(this, (tail_.load() + 1) % capacity_, this->size());
   }
 
@@ -145,6 +145,8 @@ private:
   friend class RingIterator;
 
   T* data() { return buffer_.get(); }
+
+  const T* data() const { return buffer_.get(); }
 
   const size_t capacity_;
   std::unique_ptr<T[]> buffer_;  // The actual ring buffer
